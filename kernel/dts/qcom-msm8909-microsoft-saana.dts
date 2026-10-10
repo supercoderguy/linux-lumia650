@@ -1,0 +1,134 @@
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Microsoft Lumia 650 (RM-1152, "Saana")
+ *
+ * Booted through BootShim + Lumia650Pkg (UEFI), which leaves the display
+ * running, so the panel is used as a simple framebuffer for now.
+ */
+
+/dts-v1/;
+
+#include "qcom-msm8909-pm8909.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
+/ {
+	model = "Microsoft Lumia 650";
+	compatible = "microsoft,saana", "qcom,msm8909";
+	chassis-type = "handset";
+
+	aliases {
+		display0 = &framebuffer;
+		mmc0 = &sdhc_1; /* eMMC */
+		mmc1 = &sdhc_2; /* microSD */
+	};
+
+	chosen {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		stdout-path = "display0";
+
+		/* Set up by the firmware; see PcdMipiFrameBufferAddress in Lumia650Pkg */
+		framebuffer: framebuffer@80400000 {
+			compatible = "simple-framebuffer";
+			reg = <0x80400000 (720 * 1280 * 4)>;
+			memory-region = <&framebuffer_mem>;
+
+			width = <720>;
+			height = <1280>;
+			stride = <(720 * 4)>;
+			format = "a8r8g8b8";
+
+			power-domains = <&gcc MDSS_GDSC>;
+
+			clocks = <&gcc GCC_MDSS_AHB_CLK>,
+				 <&gcc GCC_MDSS_AXI_CLK>,
+				 <&gcc GCC_MDSS_VSYNC_CLK>,
+				 <&gcc GCC_MDSS_MDP_CLK>,
+				 <&gcc GCC_MDSS_BYTE0_CLK>,
+				 <&gcc GCC_MDSS_PCLK0_CLK>,
+				 <&gcc GCC_MDSS_ESC0_CLK>;
+		};
+	};
+
+	memory@80000000 {
+		reg = <0x80000000 0x40000000>;
+	};
+
+	/*
+	 * Extra regions the Windows Phone firmware keeps for itself, on top of
+	 * the ones msm8909.dtsi already reserves.
+	 */
+	reserved-memory {
+		reserved@80000000 {
+			reg = <0x80000000 0x24000>;
+			no-map;
+		};
+
+		framebuffer_mem: framebuffer@80400000 {
+			reg = <0x80400000 0x800000>;
+			no-map;
+		};
+
+		reserved@87900000 {
+			reg = <0x87900000 0x100000>;
+			no-map;
+		};
+
+		/* The firmware reserves 0x88000000-0x8ef00000; the dtsi only covers up to the MBA region */
+		reserved@8dd00000 {
+			reg = <0x8dd00000 0x1200000>;
+			no-map;
+		};
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		pinctrl-0 = <&gpio_keys_default>;
+		pinctrl-names = "default";
+
+		key-volume-up {
+			label = "Volume Up";
+			gpios = <&tlmm 90 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_VOLUMEUP>;
+			debounce-interval = <15>;
+		};
+	};
+};
+
+&pm8909_resin {
+	linux,code = <KEY_VOLUMEDOWN>;
+	status = "okay";
+};
+
+&sdhc_1 {
+	status = "okay";
+};
+
+&sdhc_2 {
+	pinctrl-0 = <&sdc2_clk_on &sdc2_cmd_on &sdc2_data_on &sdc2_cd_default>;
+	pinctrl-1 = <&sdc2_clk_off &sdc2_cmd_off &sdc2_data_off &sdc2_cd_default>;
+
+	cd-gpios = <&tlmm 38 GPIO_ACTIVE_LOW>;
+
+	status = "okay";
+};
+
+&tlmm {
+	gpio_keys_default: gpio-keys-default-state {
+		pins = "gpio90";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	sdc2_cd_default: sdc2-cd-default-state {
+		pins = "gpio38";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+};
