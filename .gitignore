@@ -8,3 +8,7 @@ __pycache__/
 
 # Files to copy to the phone (build outputs and third-party binaries)
 deploy/
+
+# Debug initramfs build products
+initramfs/busybox
+initramfs/initramfs.list

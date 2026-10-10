@@ -1,0 +1,75 @@
+#!/bin/busybox sh
+# Minimal debug initramfs for the Lumia 650.
+# - prints storage info on the screen
+# - USB gadget: NCM network (phone 172.16.42.1, DHCP for the PC) + ACM serial
+# - telnet on 172.16.42.1:23 and a shell on the USB serial port
+
+/bin/busybox --install -s /bin
+export PATH=/bin
+
+mkdir -p /proc /sys /dev /tmp /var/lib/misc
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+mkdir -p /dev/pts
+mount -t devpts devpts /dev/pts
+mount -t configfs configfs /sys/kernel/config
+
+echo
+echo "===== Lumia 650 debug initramfs ====="
+uname -a
+echo "--- /proc/partitions"
+cat /proc/partitions
+echo "--- mmc messages"
+dmesg | grep -i -E 'mmc|sdhci' | tail -n 15
+
+# USB gadget
+G=/sys/kernel/config/usb_gadget/g1
+mkdir -p $G
+cd $G
+echo 0x1d6b > idVendor   # Linux Foundation
+echo 0x0104 > idProduct  # Multifunction Composite Gadget
+mkdir -p strings/0x409
+echo "Microsoft" > strings/0x409/manufacturer
+echo "Lumia 650 (Linux)" > strings/0x409/product
+echo "lumia650" > strings/0x409/serialnumber
+mkdir -p functions/ncm.usb0 functions/acm.usb0
+mkdir -p configs/c.1/strings/0x409
+echo "NCM + ACM" > configs/c.1/strings/0x409/configuration
+ln -s functions/ncm.usb0 configs/c.1/
+ln -s functions/acm.usb0 configs/c.1/
+
+UDC=""
+for i in 1 2 3 4 5 6 7 8 9 10; do
+	UDC=$(ls /sys/class/udc 2>/dev/null | head -n 1)
+	[ -n "$UDC" ] && break
+	sleep 1
+done
+cd /
+
+if [ -n "$UDC" ]; then
+	echo "$UDC" > $G/UDC
+	echo "--- USB gadget on $UDC"
+
+	ifconfig usb0 172.16.42.1 netmask 255.255.255.0 up
+	cat > /tmp/udhcpd.conf <<-EOF
+		start 172.16.42.2
+		end 172.16.42.2
+		interface usb0
+		max_leases 1
+		option subnet 255.255.255.0
+		lease_file /var/lib/misc/udhcpd.leases
+	EOF
+	touch /var/lib/misc/udhcpd.leases
+	udhcpd /tmp/udhcpd.conf
+	telnetd -l /bin/sh
+	echo "telnet 172.16.42.1  (or: screen /dev/ttyACM0)"
+
+	# Shell on the USB serial port, restarted whenever it exits
+	( while true; do setsid cttyhack sh </dev/ttyGS0 >/dev/ttyGS0 2>&1; sleep 1; done ) &
+else
+	echo "--- no USB device controller found"
+fi
+
+echo "====================================="
+while true; do sleep 3600; done
