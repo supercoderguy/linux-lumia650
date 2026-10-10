@@ -33,3 +33,12 @@ MMOS                0x00058000 - 0x0005AFFF
 SEC                 0x0005B000 - 0x0005B01F
 MainOS              0x0005C000 - 0x003F47FF
 Data                0x003F8000 - 0x01D1EFDE
+
+# After the WPinternals unlock (read from the full eMMC dump on 2026-10-10):
+# - the old UEFI_BS_NV was renamed BACKUP_BS_NV (same sectors 0x13000-0x131FF)
+# - a new UEFI_BS_NV holds the "SecureBoot disabled" NV variables
+# - IS_UNLOCKED is a 1-sector marker partition
+# All other partitions are unchanged. The disk is 0x1D1F000 sectors (15,634,268,160 bytes).
+BACKUP_BS_NV        0x00013000 - 0x000131FF
+UEFI_BS_NV          0x00013200 - 0x000133FF
+IS_UNLOCKED         0x00000040 - 0x00000040
