@@ -1,0 +1,108 @@
+diff --git a/BaseTools/Source/Python/AutoGen/UniClassObject.py b/BaseTools/Source/Python/AutoGen/UniClassObject.py
+index 883c235..a67b429 100644
+--- a/BaseTools/Source/Python/AutoGen/UniClassObject.py
++++ b/BaseTools/Source/Python/AutoGen/UniClassObject.py
+@@ -12,7 +12,7 @@
+ #
+ from __future__ import print_function
+ import Common.LongFilePathOs as os, codecs, re
+-import distutils.util
++import shlex
+ import Common.EdkLogger as EdkLogger
+ from io import BytesIO
+ from Common.BuildToolError import *
+@@ -233,7 +233,7 @@ class UniFileClassObject(object):
+     # Get Language definition
+     #
+     def GetLangDef(self, File, Line):
+-        Lang = distutils.util.split_quoted((Line.split(u"//")[0]))
++        Lang = shlex.split((Line.split(u"//")[0]))
+         if len(Lang) != 3:
+             try:
+                 FileIn = UniFileClassObject.OpenUniFile(LongFilePath(File.Path))
+diff --git a/BaseTools/Source/Python/Eot/EotMain.py b/BaseTools/Source/Python/Eot/EotMain.py
+index 791fcdf..08bb2de 100644
+--- a/BaseTools/Source/Python/Eot/EotMain.py
++++ b/BaseTools/Source/Python/Eot/EotMain.py
+@@ -152,11 +152,11 @@ class CompressedImage(Image):
+         try:
+             TmpData = DeCompress('Efi', self[self._HEADER_SIZE_:])
+             DecData = array('B')
+-            DecData.fromstring(TmpData)
++            DecData.frombytes(TmpData)
+         except:
+             TmpData = DeCompress('Framework', self[self._HEADER_SIZE_:])
+             DecData = array('B')
+-            DecData.fromstring(TmpData)
++            DecData.frombytes(TmpData)
+ 
+         SectionList = []
+         Offset = 0
+@@ -196,7 +196,7 @@ class Ui(Image):
+         return len(self)
+ 
+     def _GetUiString(self):
+-        return codecs.utf_16_decode(self[0:-2].tostring())[0]
++        return codecs.utf_16_decode(self[0:-2].tobytes())[0]
+ 
+     String = property(_GetUiString)
+ 
+@@ -738,7 +738,7 @@ class GuidDefinedImage(Image):
+                 Offset = self.DataOffset - 4
+                 TmpData = DeCompress('Framework', self[self.Offset:])
+                 DecData = array('B')
+-                DecData.fromstring(TmpData)
++                DecData.frombytes(TmpData)
+                 Offset = 0
+                 while Offset < len(DecData):
+                     Sec = Section()
+@@ -759,7 +759,7 @@ class GuidDefinedImage(Image):
+ 
+                 TmpData = DeCompress('Lzma', self[self.Offset:])
+                 DecData = array('B')
+-                DecData.fromstring(TmpData)
++                DecData.frombytes(TmpData)
+                 Offset = 0
+                 while Offset < len(DecData):
+                     Sec = Section()
+diff --git a/BaseTools/Source/Python/GenFds/GenFdsGlobalVariable.py b/BaseTools/Source/Python/GenFds/GenFdsGlobalVariable.py
+index dc1727c..124dc43 100644
+--- a/BaseTools/Source/Python/GenFds/GenFdsGlobalVariable.py
++++ b/BaseTools/Source/Python/GenFds/GenFdsGlobalVariable.py
+@@ -463,12 +463,12 @@ class GenFdsGlobalVariable:
+                     GenFdsGlobalVariable.SecCmdList.append(' '.join(Cmd).strip())
+             else:
+                 SectionData = array('B', [0, 0, 0, 0])
+-                SectionData.fromstring(Ui.encode("utf_16_le"))
++                SectionData.frombytes(Ui.encode("utf_16_le"))
+                 SectionData.append(0)
+                 SectionData.append(0)
+                 Len = len(SectionData)
+                 GenFdsGlobalVariable.SectionHeader.pack_into(SectionData, 0, Len & 0xff, (Len >> 8) & 0xff, (Len >> 16) & 0xff, 0x15)
+-                SaveFileOnChange(Output, SectionData.tostring())
++                SaveFileOnChange(Output, SectionData.tobytes())
+ 
+         elif Ver:
+             Cmd += ("-n", Ver)
+diff --git a/BaseTools/Source/Python/UPT/Library/UniClassObject.py b/BaseTools/Source/Python/UPT/Library/UniClassObject.py
+index d25f300..3ee23c0 100644
+--- a/BaseTools/Source/Python/UPT/Library/UniClassObject.py
++++ b/BaseTools/Source/Python/UPT/Library/UniClassObject.py
+@@ -14,7 +14,7 @@ from __future__ import print_function
+ # Import Modules
+ #
+ import os, codecs, re
+-import distutils.util
++import shlex
+ from Logger import ToolError
+ from Logger import Log as EdkLogger
+ from Logger import StringTable as ST
+@@ -320,7 +320,7 @@ class UniFileClassObject(object):
+     # Get Language definition
+     #
+     def GetLangDef(self, File, Line):
+-        Lang = distutils.util.split_quoted((Line.split(u"//")[0]))
++        Lang = shlex.split((Line.split(u"//")[0]))
+         if len(Lang) != 3:
+             try:
+                 FileIn = codecs.open(File.Path, mode='rb', encoding='utf_8').readlines()
