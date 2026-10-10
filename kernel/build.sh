@@ -35,6 +35,9 @@ dir /bin 0755 0 0
 file /bin/busybox $BB 0755 0 0
 slink /bin/sh busybox 0777 0 0
 file /init $REPO/initramfs/init 0755 0 0
+dir /lib 0755 0 0
+dir /lib/modules 0755 0 0
+file /lib/modules/sdhci-msm.ko $KSRC/build/drivers/mmc/host/sdhci-msm.ko 0644 0 0
 EOF
 
 # Config: msm8916_defconfig (arm64 base + arm part) + our fragment
@@ -45,6 +48,9 @@ cat "$KSRC/arch/arm64/configs/msm8916_defconfig" "$KSRC/arch/arm/configs/msm8916
 "$KSRC/scripts/config" --file "$KSRC/build/.config" --set-str INITRAMFS_SOURCE "$REPO/initramfs/initramfs.list"
 "${MAKE[@]}" -s olddefconfig
 
+# Modules that the initramfs carries must exist before the initramfs is packed
+"${MAKE[@]}" -s modules_prepare
+"${MAKE[@]}" -s drivers/mmc/host/sdhci-msm.ko
 "${MAKE[@]}" -s zImage qcom/qcom-msm8909-microsoft-saana.dtb 2>&1 | grep -v -E 'Warning|also defined at' || true
 
 mkdir -p "$REPO/deploy/linux"

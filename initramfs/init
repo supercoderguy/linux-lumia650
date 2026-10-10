@@ -71,5 +71,15 @@ else
 	echo "--- no USB device controller found"
 fi
 
+cat > /bin/load-mmc <<-EOF
+	#!/bin/sh
+	# Load the SD/eMMC driver and show what it does
+	insmod /lib/modules/sdhci-msm.ko
+	sleep 3
+	dmesg | tail -n 40
+	cat /proc/partitions
+EOF
+chmod 755 /bin/load-mmc
+echo "sdhci-msm is NOT loaded; run load-mmc to load it"
 echo "====================================="
 while true; do sleep 3600; done

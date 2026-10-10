@@ -84,6 +84,21 @@
 		};
 	};
 
+	soc@0 {
+		/*
+		 * APSS watchdog (missing from qcom-msm8909.dtsi). The firmware
+		 * appears to leave it running, which reset the phone ~20 s into
+		 * boot; with a node here the watchdog core keeps it petted.
+		 */
+		watchdog@b017000 {
+			compatible = "qcom,kpss-wdt";
+			reg = <0x0b017000 0x1000>;
+			interrupts = <GIC_SPI 3 IRQ_TYPE_EDGE_RISING>;
+			clocks = <&sleep_clk>;
+			timeout-sec = <30>;
+		};
+	};
+
 	gpio-keys {
 		compatible = "gpio-keys";
 
