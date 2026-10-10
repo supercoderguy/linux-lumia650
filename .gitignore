@@ -1,0 +1,7 @@
+# Microsoft/Qualcomm firmware is proprietary: keep it local, never commit it.
+firmware/*
+!firmware/gpt-phone.txt
+
+__pycache__/
+*.img
+*.ffu
