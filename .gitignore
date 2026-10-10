@@ -5,3 +5,6 @@ firmware/*
 __pycache__/
 *.img
 *.ffu
+
+# Files to copy to the phone (build outputs and third-party binaries)
+deploy/
