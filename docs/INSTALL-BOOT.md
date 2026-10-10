@@ -15,7 +15,7 @@ a full eMMC backup, and a Windows PC with WPinternals.
 
 | File | Goes to | From |
 |---|---|---|
-| `BootShim.efi` | `EFIESP\BootShim.efi` | imbushuo/boot-shim release `elf-loader-pre3` (ELF Variant 2.1) |
+| `BootShim.efi` | `EFIESP\BootShim.efi` | sonic011gamer/boot-shim release `elf-loader-pre4` (copies the payload after ExitBootServices, so it can load at the stock UEFI's own 0x80200000; imbushuo's `elf-loader-pre3` refuses that address) |
 | `emmc_appsboot.mbn` | `EFIESP\emmc_appsboot.mbn` | `uefi/build.sh` |
 | `linux/zImage` | `EFIESP\linux\zImage` | kernel build with `kernel/lumia650.config` |
 | `linux/saana.dtb` | `EFIESP\linux\saana.dtb` | `kernel/dts/qcom-msm8909-microsoft-saana.dts` |
