@@ -137,93 +137,52 @@
 	status = "okay";
 };
 
-/* Standard MSM8909 voltages (same as the other msm8909 boards) */
+/*
+ * Only the rails that storage and USB need get constraints, with the values
+ * from the Lumia's own ACPI power tables (docs/hardware.md). Rails without
+ * constraints are never touched by Linux. Copying the generic MSM8909 values
+ * for every rail froze the phone: the Lumia runs S2 at 1.95 V (generic 1.85 V),
+ * L9 at 3.3 V and L10 at 1.3 V.
+ */
 &smd_rpm_regulators {
-	s2 {
-		regulator-min-microvolt = <1850000>;
-		regulator-max-microvolt = <1850000>;
-	};
-
-	l1 {
-		regulator-min-microvolt = <1000000>;
-		regulator-max-microvolt = <1000000>;
-	};
-
-	l2 {
-		regulator-min-microvolt = <1200000>;
-		regulator-max-microvolt = <1200000>;
-	};
-
-	l4 {
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-	};
-
+	/* eMMC VCCQ; also NFC, audio, WCN */
 	l5 {
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
 	};
 
-	l6 {
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-	};
-
+	/* USB PHY 1.8 V; also WCN */
 	l7 {
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
 	};
 
+	/* eMMC VCC (ACPI: 2.85 V for SDC1) */
 	l8 {
 		regulator-min-microvolt = <2850000>;
 		regulator-max-microvolt = <2900000>;
 	};
 
-	l9 {
-		regulator-min-microvolt = <3000000>;
-		regulator-max-microvolt = <3300000>;
-	};
-
-	l10 {
-		regulator-min-microvolt = <1225000>;
-		regulator-max-microvolt = <1300000>;
-	};
-
+	/* microSD VCC */
 	l11 {
-		regulator-min-microvolt = <1800000>;
+		regulator-min-microvolt = <2950000>;
 		regulator-max-microvolt = <2950000>;
 		regulator-system-load = <200000>;
 		regulator-allow-set-load;
 	};
 
+	/* microSD VCCQ (1.8 V or 2.95 V) */
 	l12 {
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <2950000>;
 	};
 
+	/* USB PHY 3.075 V; also audio */
 	l13 {
 		regulator-min-microvolt = <3075000>;
 		regulator-max-microvolt = <3075000>;
-	};
-
-	l14 {
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <3000000>;
-	};
-
-	l15 {
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <3000000>;
-	};
-
-	l17 {
-		regulator-min-microvolt = <2850000>;
-		regulator-max-microvolt = <2850000>;
-	};
-
-	l18 {
-		regulator-min-microvolt = <2700000>;
-		regulator-max-microvolt = <2700000>;
 	};
 };
 
