@@ -1,0 +1,169 @@
+diff --git a/Library/Lumia650Lib/Lumia650Lib.inf b/Library/Lumia650Lib/Lumia650Lib.inf
+index cc5ed4f..7b7ae69 100644
+--- a/Library/Lumia650Lib/Lumia650Lib.inf
++++ b/Library/Lumia650Lib/Lumia650Lib.inf
+@@ -28,6 +28,7 @@
+ 
+ [LibraryClasses]
+   ArmLib
++  BaseMemoryLib
+   DebugLib
+ 
+ [Sources.common]
+diff --git a/Library/Lumia650Lib/Lumia650LibMem.c b/Library/Lumia650Lib/Lumia650LibMem.c
+index 516f7e5..500eeeb 100644
+--- a/Library/Lumia650Lib/Lumia650LibMem.c
++++ b/Library/Lumia650Lib/Lumia650LibMem.c
+@@ -14,6 +14,7 @@
+ **/
+ 
+ #include <Library/ArmPlatformLib.h>
++#include <Library/BaseMemoryLib.h>
+ #include <Library/DebugLib.h>
+ #include <Library/HobLib.h>
+ #include <Configuration/DeviceMemoryMap.h>
+@@ -56,7 +57,7 @@ ArmPlatformGetVirtualMemoryMap (
+ {
+   //TO-DO:ADD MEMORY MAP HERE
+     PARM_MEMORY_REGION_DESCRIPTOR_EX MemoryDescriptorEx = gDeviceMemoryDescriptorEx;
+-    ARM_MEMORY_REGION_DESCRIPTOR MemoryDescriptor[MAX_ARM_MEMORY_REGION_DESCRIPTOR_COUNT];
++    STATIC ARM_MEMORY_REGION_DESCRIPTOR MemoryDescriptor[MAX_ARM_MEMORY_REGION_DESCRIPTOR_COUNT];
+     UINTN Index = 0;
+ 
+     // Run through each memory descriptor
+@@ -87,6 +88,7 @@ ArmPlatformGetVirtualMemoryMap (
+ 
+     // Last one (terminator)
+     ASSERT(Index < MAX_ARM_MEMORY_REGION_DESCRIPTOR_COUNT);
++    ZeroMem(&MemoryDescriptor[Index], sizeof(MemoryDescriptor[Index]));
+     
+     *VirtualMemoryMap = MemoryDescriptor;
+   //ASSERT(0);
+diff --git a/Library/PlatformBootManagerLib/PlatformBm.c b/Library/PlatformBootManagerLib/PlatformBm.c
+index d15379c..3461f9a 100644
+--- a/Library/PlatformBootManagerLib/PlatformBm.c
++++ b/Library/PlatformBootManagerLib/PlatformBm.c
+@@ -32,6 +32,7 @@
+ #include <Protocol/PciIo.h>
+ #include <Protocol/PciRootBridgeIo.h>
+ #include <Protocol/PlatformBootManager.h>
++#include <Protocol/SimpleFileSystem.h>
+ #include <Guid/EventGroup.h>
+ #include <Guid/TtyTerm.h>
+ 
+@@ -459,6 +460,90 @@ PlatformRegisterFvBootOption (
+ }
+ 
+ 
++//
++// Linux kernel on any FAT volume (in practice EFIESP). The kernel's EFI stub
++// loads the dtb= file from the same volume.
++//
++STATIC CHAR16 mLinuxKernelPath[] = L"\\linux\\zImage";
++STATIC CHAR16 mLinuxCmdline[]    =
++  L"dtb=\\linux\\saana.dtb console=tty0 efi=noruntime";
++
++/**
++  If a FAT volume holds mLinuxKernelPath, register it as the first boot option.
++**/
++STATIC
++VOID
++PlatformRegisterLinuxBootOption (
++  VOID
++  )
++{
++  EFI_STATUS                        Status;
++  EFI_HANDLE                        *Handles;
++  UINTN                             HandleCount;
++  UINTN                             Index;
++  EFI_SIMPLE_FILE_SYSTEM_PROTOCOL   *Fs;
++  EFI_FILE_PROTOCOL                 *Root;
++  EFI_FILE_PROTOCOL                 *Kernel;
++  EFI_DEVICE_PATH_PROTOCOL          *DevicePath;
++  EFI_BOOT_MANAGER_LOAD_OPTION      NewOption;
++  EFI_BOOT_MANAGER_LOAD_OPTION      *BootOptions;
++  UINTN                             BootOptionCount;
++
++  Status = gBS->LocateHandleBuffer (ByProtocol,
++                  &gEfiSimpleFileSystemProtocolGuid, NULL, &HandleCount,
++                  &Handles);
++  if (EFI_ERROR (Status)) {
++    return;
++  }
++
++  for (Index = 0; Index < HandleCount; Index++) {
++    Status = gBS->HandleProtocol (Handles[Index],
++                    &gEfiSimpleFileSystemProtocolGuid, (VOID **)&Fs);
++    if (EFI_ERROR (Status) || EFI_ERROR (Fs->OpenVolume (Fs, &Root))) {
++      continue;
++    }
++    Status = Root->Open (Root, &Kernel, mLinuxKernelPath, EFI_FILE_MODE_READ, 0);
++    Root->Close (Root);
++    if (EFI_ERROR (Status)) {
++      continue;
++    }
++    Kernel->Close (Kernel);
++
++    DevicePath = FileDevicePath (Handles[Index], mLinuxKernelPath);
++    if (DevicePath == NULL) {
++      break;
++    }
++    Status = EfiBootManagerInitializeLoadOption (
++               &NewOption,
++               LoadOptionNumberUnassigned,
++               LoadOptionTypeBoot,
++               LOAD_OPTION_ACTIVE,
++               L"Linux",
++               DevicePath,
++               (UINT8 *)mLinuxCmdline,
++               sizeof (mLinuxCmdline)
++               );
++    FreePool (DevicePath);
++    if (EFI_ERROR (Status)) {
++      break;
++    }
++
++    BootOptions = EfiBootManagerGetLoadOptions (&BootOptionCount,
++                    LoadOptionTypeBoot);
++    if (EfiBootManagerFindLoadOption (&NewOption, BootOptions,
++          BootOptionCount) == -1) {
++      // Position 0: boot Linux by default, the shell stays as fallback
++      EfiBootManagerAddLoadOptionVariable (&NewOption, 0);
++    }
++    EfiBootManagerFreeLoadOptions (BootOptions, BootOptionCount);
++    EfiBootManagerFreeLoadOption (&NewOption);
++    DEBUG ((DEBUG_INFO, "%a: registered %s\n", __FUNCTION__, mLinuxKernelPath));
++    break;
++  }
++
++  FreePool (Handles);
++}
++
+ STATIC
+ VOID
+ GetPlatformOptions (
+@@ -780,8 +865,10 @@ PlatformBootManagerAfterConsole (
+   //EfiBootManagerRefreshAllBootOption ();
+ 
+   //
+-  // Register UEFI Shell
++  // Register Linux (if present on a FAT volume), then the UEFI Shell
+   //
++  PlatformRegisterLinuxBootOption ();
++
+   PlatformRegisterFvBootOption (
+     &gUefiShellFileGuid, L"UEFI Shell", LOAD_OPTION_ACTIVE
+     );
+diff --git a/Shared.dsc.inc b/Shared.dsc.inc
+index 0515fe3..6d35d19 100644
+--- a/Shared.dsc.inc
++++ b/Shared.dsc.inc
+@@ -15,7 +15,7 @@
+ #
+ 
+ [BuildOptions.common]
+-  GCC:*_*_ARM_CC_FLAGS = -fno-stack-protector
++  GCC:*_*_ARM_CC_FLAGS = -fno-stack-protector -std=gnu17
+   GCC:*_*_ARM_DLINK_FLAGS = -fno-stack-protector
+ 
+ [BuildOptions.common.EDKII.DXE_CORE,BuildOptions.common.EDKII.DXE_DRIVER,BuildOptions.common.EDKII.UEFI_DRIVER,BuildOptions.common.EDKII.UEFI_APPLICATION]

@@ -15,7 +15,7 @@ if [ ! -d "$WORK" ]; then
         https://github.com/tianocore/edk2.git "$WORK"
     git clone --depth 1 https://github.com/sonic011gamer/Lumia650Pkg "$WORK/Lumia650Pkg"
     git -C "$WORK" apply "$HERE/patches/edk2-202011-python3.14.patch"
-    git -C "$WORK/Lumia650Pkg" apply "$HERE/patches/lumia650pkg-gcc16.patch"
+    git -C "$WORK/Lumia650Pkg" apply "$HERE/patches/lumia650pkg.patch"
 fi
 
 cd "$WORK"
