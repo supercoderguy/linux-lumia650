@@ -1,3 +1,18 @@
+diff --git a/Driver/Pm8x41Dxe/Driver.c b/Driver/Pm8x41Dxe/Driver.c
+index 534be46..2f57431 100644
+--- a/Driver/Pm8x41Dxe/Driver.c
++++ b/Driver/Pm8x41Dxe/Driver.c
+@@ -16,6 +16,10 @@ Pm8x41DxeInitialize (
+ 
+   Pm8x41ImplLibInitialize();
+ 
++  // The stock firmware may leave the PMIC watchdog (PON S2 reset) armed;
++  // disable it so nothing resets the phone after BootShim hands over.
++  gPm8x41->pm8x41_clear_pmic_watchdog();
++
+   Status = gBS->InstallMultipleProtocolInterfaces(
+                   &Handle,
+                   &gQcomPm8x41ProtocolGuid,      gPm8x41,
 diff --git a/Library/Lumia650Lib/Lumia650Lib.inf b/Library/Lumia650Lib/Lumia650Lib.inf
 index cc5ed4f..7b7ae69 100644
 --- a/Library/Lumia650Lib/Lumia650Lib.inf
@@ -154,8 +169,27 @@ index d15379c..3461f9a 100644
    PlatformRegisterFvBootOption (
      &gUefiShellFileGuid, L"UEFI Shell", LOAD_OPTION_ACTIVE
      );
+diff --git a/PrePi/Pi.c b/PrePi/Pi.c
+index 94a654c..a31c7d8 100644
+--- a/PrePi/Pi.c
++++ b/PrePi/Pi.c
+@@ -193,6 +193,14 @@ CEntryPoint
+ )
+ {
+    UINT64 StartTimeStamp;
++
++   //
++   // When started through BootShim, the stock Windows firmware has handed
++   // over with a watchdog armed and the phone resets ~20 s later. Disable
++   // the APSS watchdog (WDT_EN at 0x0B017008) before anything else.
++   //
++   MmioWrite32 (0x0B017008, 0);
++
+    ArmPlatformInitialize (MpId);
+ 
+    if (ArmPlatformIsPrimaryCore (MpId) && PerformanceMeasurementEnabled ()) {
 diff --git a/Shared.dsc.inc b/Shared.dsc.inc
-index 0515fe3..6d35d19 100644
+index 0515fe3..4bb98e7 100644
 --- a/Shared.dsc.inc
 +++ b/Shared.dsc.inc
 @@ -15,7 +15,7 @@
@@ -167,3 +201,12 @@ index 0515fe3..6d35d19 100644
    GCC:*_*_ARM_DLINK_FLAGS = -fno-stack-protector
  
  [BuildOptions.common.EDKII.DXE_CORE,BuildOptions.common.EDKII.DXE_DRIVER,BuildOptions.common.EDKII.UEFI_DRIVER,BuildOptions.common.EDKII.UEFI_APPLICATION]
+@@ -141,7 +141,7 @@
+   # Boot Manager
+   gEfiMdeModulePkgTokenSpaceGuid.PcdBootManagerMenuFile|{ 0x21, 0xaa, 0x2c, 0x46, 0x14, 0x76, 0x03, 0x45, 0x83, 0x6e, 0x8a, 0xb6, 0xf4, 0x66, 0x23, 0x31 }
+   #gEfiIntelFrameworkModulePkgTokenSpaceGuid.PcdShellFile|{ 0x83, 0xA5, 0x04, 0x7C, 0x3E, 0x9E, 0x1C, 0x4F, 0xAD, 0x65, 0xE0, 0x52, 0x68, 0xD0, 0xB4, 0xD1 }
+-  gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|5
++  gEfiMdePkgTokenSpaceGuid.PcdPlatformBootTimeOut|2
+ 
+ [LibraryClasses]
+   VariablePolicyHelperLib|MdeModulePkg/Library/VariablePolicyHelperLib/VariablePolicyHelperLib.inf
