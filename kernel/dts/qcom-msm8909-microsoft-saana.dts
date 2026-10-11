@@ -157,6 +157,7 @@
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
 		regulator-always-on;
+		regulator-allow-set-load;
 	};
 
 	/* eMMC VCC (ACPI: 2.85 V for SDC1) */
@@ -179,10 +180,14 @@
 		regulator-max-microvolt = <2950000>;
 	};
 
-	/* USB PHY 3.075 V; also audio */
+	/*
+	 * USB PHY 3.3 V side; also audio. The PHY asks for 3.05-3.3 V, so a
+	 * fixed 3.075 V was refused ("voltage operation not allowed").
+	 */
 	l13 {
-		regulator-min-microvolt = <3075000>;
+		regulator-min-microvolt = <3050000>;
 		regulator-max-microvolt = <3075000>;
+		regulator-allow-set-load;
 	};
 };
 
