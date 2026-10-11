@@ -157,7 +157,6 @@
 		regulator-min-microvolt = <1800000>;
 		regulator-max-microvolt = <1800000>;
 		regulator-always-on;
-		regulator-allow-set-load;
 	};
 
 	/* eMMC VCC (ACPI: 2.85 V for SDC1) */
@@ -181,18 +180,16 @@
 	};
 
 	/*
-	 * USB PHY 3.3 V side; also audio. The PHY asks for 3.05-3.3 V, so a
-	 * fixed 3.075 V was refused ("voltage operation not allowed").
+	 * USB PHY 3.3 V side; 	/*
+	 * USB PHY 3.3 V side; also audio. Starts at the Lumia's 3.075 V (Linux
+	 * forces the minimum at probe); the PHY then asks for 3.05-3.3 V.
+	 * No regulator-allow-set-load on shared rails: with it, the core put a
+	 * rail into low-power mode at probe and the phone crashed (boots 5, 7).
 	 */
 	l13 {
-		regulator-min-microvolt = <3050000>;
-		regulator-max-microvolt = <3075000>;
-		regulator-allow-set-load;
-	};
-};
-
-&usb {
-	dr_mode = "peripheral";
+		regulator-min-microvolt = <3075000>;
+		regulator-max-microvolt = <3300000>;
+	};pheral";
 	extcon = <&pm8909_usbin>;
 	status = "okay";
 };
