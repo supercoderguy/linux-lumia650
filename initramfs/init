@@ -23,13 +23,20 @@ cat /proc/partitions
 echo "--- mmc messages"
 dmesg | grep -i -E 'mmc|sdhci' | tail -n 15
 
+# Uptime ticker from the start, so the last value on screen shows when a
+# reset happened (boot 10 reset silently somewhere in the next 10 s)
+( while true; do echo "up $(cut -d' ' -f1 /proc/uptime) s"; sleep 1; done ) &
+
 # Watchdog status (read-only). Reading the WDT registers with devmem
 # crashed the phone in boots 5-8, so don't touch the hardware here.
-echo "--- watchdog"
+# bootstatus 32 (0x20) = the last reset came from that watchdog.
+echo "--- watchdogs"
 dmesg | grep -i -E 'wdt|watchdog' | tail -n 5
-for f in /sys/class/watchdog/watchdog0/state /sys/class/watchdog/watchdog0/timeout /sys/class/watchdog/watchdog0/bootstatus; do
-	[ -e $f ] && echo "$f: $(cat $f)"
+for w in /sys/class/watchdog/watchdog*; do
+	[ -d $w ] || continue
+	echo "$(basename $w): $(cat $w/identity) state=$(cat $w/state) timeout=$(cat $w/timeout) bootstatus=$(cat $w/bootstatus)"
 done
+
 # USB gadget
 G=/sys/kernel/config/usb_gadget/g1
 mkdir -p $G
@@ -89,8 +96,5 @@ EOF
 chmod 755 /bin/load-mmc
 echo "sdhci-msm is NOT loaded; run load-mmc to load it"
 echo "====================================="
-# Uptime ticker: the last value on screen shows when a reset happened
-while true; do
-	echo "up $(cut -d' ' -f1 /proc/uptime) s"
-	sleep 2
-done
+# Keep init alive (the ticker runs in the background)
+while true; do sleep 3600; done
