@@ -51,7 +51,7 @@ cat "$KSRC/arch/arm64/configs/msm8916_defconfig" "$KSRC/arch/arm/configs/msm8916
 # Modules that the initramfs carries must exist before the initramfs is packed
 "${MAKE[@]}" -s modules_prepare
 "${MAKE[@]}" -s drivers/mmc/host/sdhci-msm.ko
-"${MAKE[@]}" -s zImage qcom/qcom-msm8909-microsoft-saana.dtb 2>&1 | grep -v -E 'Warning|also defined at' || true
+"${MAKE[@]}" -s zImage qcom/qcom-msm8909-microsoft-saana.dtb 2> >(grep -v -E "Warning|also defined at" >&2)
 
 mkdir -p "$REPO/deploy/linux"
 cp "$KSRC/build/arch/arm/boot/zImage" "$REPO/deploy/linux/zImage"

@@ -180,7 +180,6 @@
 	};
 
 	/*
-	 * USB PHY 3.3 V side; 	/*
 	 * USB PHY 3.3 V side; also audio. Starts at the Lumia's 3.075 V (Linux
 	 * forces the minimum at probe); the PHY then asks for 3.05-3.3 V.
 	 * No regulator-allow-set-load on shared rails: with it, the core put a
@@ -189,7 +188,11 @@
 	l13 {
 		regulator-min-microvolt = <3075000>;
 		regulator-max-microvolt = <3300000>;
-	};pheral";
+	};
+};
+
+&usb {
+	dr_mode = "peripheral";
 	extcon = <&pm8909_usbin>;
 	status = "okay";
 };
