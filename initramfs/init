@@ -23,22 +23,13 @@ cat /proc/partitions
 echo "--- mmc messages"
 dmesg | grep -i -E 'mmc|sdhci' | tail -n 15
 
-# Watchdog diagnostics: something resets the phone ~20 s after BootShim.
+# Watchdog status (read-only). Reading the WDT registers with devmem
+# crashed the phone in boots 5-8, so don't touch the hardware here.
 echo "--- watchdog"
 dmesg | grep -i -E 'wdt|watchdog' | tail -n 5
 for f in /sys/class/watchdog/watchdog0/state /sys/class/watchdog/watchdog0/timeout /sys/class/watchdog/watchdog0/bootstatus; do
 	[ -e $f ] && echo "$f: $(cat $f)"
 done
-# APSS WDT registers at 0x0b017000: RST, EN, STS, BARK, BITE
-for off in 4 8 c 10 14; do
-	printf "wdt+0x%s = %s\n" $off "$(devmem $((0x0b017000 + 0x$off)) 32)"
-done
-if [ -e /dev/watchdog ]; then
-	# Open it (starts it if it wasn't running) and pet it every 2 s
-	watchdog -F -T 30 -t 2 /dev/watchdog &
-	echo "petting /dev/watchdog every 2 s"
-fi
-
 # USB gadget
 G=/sys/kernel/config/usb_gadget/g1
 mkdir -p $G
