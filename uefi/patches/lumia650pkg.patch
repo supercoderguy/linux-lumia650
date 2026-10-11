@@ -1,18 +1,3 @@
-diff --git a/Driver/Pm8x41Dxe/Driver.c b/Driver/Pm8x41Dxe/Driver.c
-index 534be46..2f57431 100644
---- a/Driver/Pm8x41Dxe/Driver.c
-+++ b/Driver/Pm8x41Dxe/Driver.c
-@@ -16,6 +16,10 @@ Pm8x41DxeInitialize (
- 
-   Pm8x41ImplLibInitialize();
- 
-+  // The stock firmware may leave the PMIC watchdog (PON S2 reset) armed;
-+  // disable it so nothing resets the phone after BootShim hands over.
-+  gPm8x41->pm8x41_clear_pmic_watchdog();
-+
-   Status = gBS->InstallMultipleProtocolInterfaces(
-                   &Handle,
-                   &gQcomPm8x41ProtocolGuid,      gPm8x41,
 diff --git a/Library/Lumia650Lib/Lumia650Lib.inf b/Library/Lumia650Lib/Lumia650Lib.inf
 index cc5ed4f..7b7ae69 100644
 --- a/Library/Lumia650Lib/Lumia650Lib.inf
