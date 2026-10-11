@@ -20,6 +20,8 @@ echo "===== Lumia 650 debug initramfs ====="
 uname -a
 echo "--- /proc/partitions"
 cat /proc/partitions
+echo "--- CPUs: $(grep -c ^processor /proc/cpuinfo) online"
+dmesg | grep -i -E 'smp|cpuidle|psci|scm' | tail -n 6
 echo "--- mmc messages"
 dmesg | grep -i -E 'mmc|sdhci' | tail -n 15
 
