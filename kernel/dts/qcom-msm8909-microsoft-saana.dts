@@ -194,12 +194,7 @@
 &usb {
 	dr_mode = "peripheral";
 	extcon = <&pm8909_usbin>;
-	/*
-	 * TEMPORARILY disabled to test whether powering up the USB PHY/controller
-	 * is what crashes the phone at ~3.7 s (boots 5-9; boot 4, where the PHY
-	 * supply was refused, got through).
-	 */
-	status = "disabled";
+	status = "okay";
 };
 
 &usb_hs_phy {
